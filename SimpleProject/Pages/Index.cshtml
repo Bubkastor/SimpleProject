@@ -1,0 +1,125 @@
+﻿@page
+@using SimpleProject.Model
+@using System.Reflection
+@using Microsoft.AspNetCore.Mvc.Rendering
+@using System.ComponentModel.DataAnnotations
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+@{
+    List<SelectListItem> GetListEnum(Type type)
+    {
+        Array values = Enum.GetValues(type);
+        List<SelectListItem> items = new List<SelectListItem>(values.Length);
+
+        foreach (var i in values)
+        {
+            items.Add(new SelectListItem
+            {
+                Text = Enum.GetName(type, i),
+                Value = i.ToString()
+            });
+        }
+
+        return items;
+    }
+    String EnumToString(Type enumType)
+    {
+        var result = "";
+        var enumList = GetListEnum(enumType);
+        foreach (var enumItem in enumList)
+        {
+            result += "<option value='" + enumItem.Value + "'>" + enumItem.Text + "</option>";
+        }
+        return result;
+    }
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <h2>Message</h2>
+        @Model.Message
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <h2>Simple</h2>
+        <form asp-page-handler="simple" method="post">
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    @Html.LabelFor(Model => Model.User.Name, htmlAttributes: new { @class = "input-group-text" })
+                </div>
+                <input asp-for="User.Name">
+            </div>
+
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    @Html.LabelFor(Model => Model.User.Age, htmlAttributes: new { @class = "input-group-text" })
+                </div>
+                <input asp-for="User.Age">
+            </div>
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    @Html.LabelFor(Model => Model.User.Sex, htmlAttributes: new { @class = "input-group-text" })
+                </div>
+                <select asp-for="User.Sex" asp-items="GetListEnum(typeof(Sex))"></select>
+            </div>
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+</div>
+
+
+<div class="row">
+    <div class="col-md-12">
+        <h2>Template property</h2>
+        <form asp-page-handler="template" method="post">
+
+            @{
+                PropertyInfo[] properties = Model.User.GetType().GetProperties();
+                foreach (PropertyInfo prop in properties)
+                {
+                    object[] attrs = prop.GetCustomAttributes(true);
+                    foreach (object attr in attrs)
+                    {
+                        DisplayAttribute displayAttribute = attr as DisplayAttribute;
+                        if (displayAttribute != null)
+                        {
+                            string propName = prop.Name;
+                            var val = prop.GetValue(Model.User);
+                            var id = Model.User.ToString() + propName;
+
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <label for="@id">@displayAttribute.Name</label>
+                                </div>
+                                @{
+                                    switch (prop.PropertyType.Name)
+                                    {
+                                        case nameof(String):
+                                            <input type="text" id="@id" class="input-group-text" />
+                                            break;
+                                        case nameof(Int32):
+                                            <input type="number" id="@id" class="input-group-text" />
+                                            break;
+                                        case nameof(Sex):
+                                            var options = EnumToString(typeof(Sex));
+                                            <select id="@id">
+                                                @Html.Raw(options)
+                                            </select>
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                }
+                            </div>
+                        }
+                    }
+                }
+            }
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+</div>
